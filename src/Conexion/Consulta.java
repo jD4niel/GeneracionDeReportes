@@ -25,7 +25,7 @@ public class Consulta {
     public Connection getConnection() {
         Connection mConexion = null;
         try {
-            mConexion = DriverManager.getConnection("jdbc:mysql://localhost:3306/novaelectric", "root", "pass");
+            mConexion = DriverManager.getConnection("jdbc:mysql://localhost:3306/novaelectric", "root", "");
             Statement mStatement = mConexion.createStatement();
             ResultSet mResulSet = mStatement.executeQuery("SELECT * FROM estados");
 

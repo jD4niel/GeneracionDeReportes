@@ -15,7 +15,7 @@ public class ConectaDb {
 
     public static void main(String[] args) {
         try {
-            Connection mConexion = DriverManager.getConnection("jdbc:mysql://localhost:3306/novaelectric", "root", "pass");
+            Connection mConexion = DriverManager.getConnection("jdbc:mysql://localhost:3306/novaelectric", "root", "");
             Statement mStatement = mConexion.createStatement();
             ResultSet mResulSet = mStatement.executeQuery("SELECT * FROM municipios");
 
