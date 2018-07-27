@@ -18,6 +18,10 @@ public class Pedido {
     public Pedido() {
     }
 
+    public Pedido(int luminaria_id, int cantidad) {
+        this.luminaria_id = luminaria_id;
+        this.cantidad = cantidad;
+    }
     public Pedido(int id, int luminaria_id, int cantidad) {
         this.id = id;
         this.luminaria_id = luminaria_id;

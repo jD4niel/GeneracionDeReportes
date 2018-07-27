@@ -3,8 +3,17 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/home/jdaniel/NetBeansProjects/ProyectoNovaElectric/src/Calculo.java</file>
-            <file>file:/home/jdaniel/NetBeansProjects/ProyectoNovaElectric/src/Conexion/ConectaDb.java</file>
+            <file>file:/C:/Users/Dany/Documents/NetBeansProjects/GeneracionDeReportes/src/excel/GenerarExcel.java</file>
+            <file>file:/C:/Users/Dany/Documents/NetBeansProjects/GeneracionDeReportes/src/Entidades/Proyectos.java</file>
+            <file>file:/C:/Users/Dany/Documents/NetBeansProjects/GeneracionDeReportes/src/Entidades/Cotizacion.java</file>
+            <file>file:/C:/Users/Dany/Documents/NetBeansProjects/GeneracionDeReportes/src/Conexion/Consulta.java</file>
+            <file>file:/C:/Users/Dany/Documents/NetBeansProjects/GeneracionDeReportes/src/Tablas/LlenarTabla.java</file>
+            <file>file:/C:/Users/Dany/Documents/NetBeansProjects/GeneracionDeReportes/src/Conexion/ConectaDb.java</file>
+            <file>file:/C:/Users/Dany/Documents/NetBeansProjects/GeneracionDeReportes/src/Entidades/Pedido.java</file>
+            <file>file:/C:/Users/Dany/Documents/NetBeansProjects/GeneracionDeReportes/src/excel/Excel.java</file>
+            <file>file:/C:/Users/Dany/Documents/NetBeansProjects/GeneracionDeReportes/src/Calculos.java</file>
+            <file>file:/C:/Users/Dany/Documents/NetBeansProjects/GeneracionDeReportes/src/Conexion/Insertar.java</file>
+            <file>file:/C:/Users/Dany/Documents/NetBeansProjects/GeneracionDeReportes/src/excel/Generar.java</file>
         </group>
     </open-files>
 </project-private>

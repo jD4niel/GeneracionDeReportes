@@ -1,9 +1,13 @@
 
 import Conexion.Consulta;
+import Conexion.Insertar;
+import Entidades.Cotizacion;
 import Entidades.Pedido;
+import Entidades.Proyectos;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
@@ -33,8 +37,43 @@ public class Calculos extends javax.swing.JFrame {
         BindCombo();
         FillLum();
         textFecha();
+       
     }
+    public void tablaUno(){
+         DefaultTableModel amodel = (DefaultTableModel) jTable1.getModel();
+        amodel.setRowCount(0);
 
+        try {
+            Consulta mq = new Consulta();
+            Connection con = mq.getConnection();
+            Statement st = null;
+            ResultSet rs;
+
+            String colhead[] = {"Poblacion", "Luminaria", "Cantidad", "watz","dsdd"};
+            amodel.setColumnIdentifiers(colhead);
+             Statement stm=con.createStatement();
+            rs = stm.executeQuery("SELECT poblacion.nombre,luminarias.nombre,sum(pedido.cantidad),cotizaciones.watz FROM proyectos \n"
+                    + "INNER JOIN cotizaciones on cotizaciones.id=proyectos.cotizaciones_id\n"
+                    + "INNER JOIN pedido on pedido.id=cotizaciones.pedido_id\n"
+                    + "INNER JOIN luminarias on luminarias.id=pedido.luminaria_id\n"
+                    + "INNER JOIN municipio_poblacion ON municipio_poblacion.id=cotizaciones.mun_poblacion_id\n"
+                    + "INNER JOIN poblacion ON poblacion.id=municipio_poblacion.poblacion_id\n"
+                    + "INNER JOIN municipios ON municipios.id=municipio_poblacion.municipio_id\n"
+                    + "GROUP BY poblacion.nombre,luminarias.nombre,pedido.cantidad,cotizaciones.watz");
+
+           ResultSetMetaData rsmd = rs.getMetaData();
+            int cols = rsmd.getColumnCount();
+            while (rs.next()) {
+                Object[] obj = new Object[cols];
+                for (int i = 0; i < cols; i++) {
+                    obj[i] = rs.getObject(i + 1);
+                }
+                amodel.addRow(obj);
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(Calculos.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
     public void mostrar() {
         DefaultTableModel modelo = new DefaultTableModel();
 
@@ -56,7 +95,7 @@ public class Calculos extends javax.swing.JFrame {
 
     public void textFecha() {
         String fechaHoy = obtenerFechaFormateada(getFecha(), "dd/LL/yyyy");
-        jTextField1.setText(fechaHoy);
+        txtFecha.setText(fechaHoy);
     }
 
     public LocalDate getFecha() {
@@ -112,8 +151,54 @@ public class Calculos extends javax.swing.JFrame {
         }
     }
 
-    public void BindCombo() {
+    public int ultimaID(String tabla) {
+        try {
+            Consulta query = new Consulta();
+            Connection con = query.getConnection();
+            Statement st;
+            ResultSet rs;
+            int valor;
+            st = con.createStatement();
+            rs = st.executeQuery("SELECT " + tabla + ".id FROM " + tabla + "\n"
+                    + "ORDER BY " + tabla + ".id DESC LIMIT 1");
+            System.out.println("rs: " + rs.toString());
+            if (rs.next()) {
+                valor = Integer.parseInt(rs.getString(tabla + ".id"));
+                return valor;
+            } else {
+                return 0;
 
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(Calculos.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return 0;
+    }
+
+    public int regresaID(String tabla, String campo) {
+        try {
+            Consulta query = new Consulta();
+            Connection con = query.getConnection();
+            Statement st;
+            ResultSet rs;
+            int valor;
+            st = con.createStatement();
+            rs = st.executeQuery("SELECT " + tabla + ".id FROM " + tabla + " WHERE nombre='" + campo + "'");
+            System.out.println("rs: " + rs.toString());
+            if (rs.next()) {
+                valor = Integer.parseInt(rs.getString(tabla + ".id"));
+                return valor;
+            } else {
+                return 0;
+
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(Calculos.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return 0;
+    }
+
+    public void BindCombo() {
         Consulta query = new Consulta();
         Connection con = query.getConnection();
         Statement st;
@@ -158,9 +243,9 @@ public class Calculos extends javax.swing.JFrame {
         c_poblacion = new javax.swing.JComboBox<>();
         jLabel5 = new javax.swing.JLabel();
         jLabel9 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
-        btn_poblacion = new javax.swing.JButton();
-        jTextField2 = new javax.swing.JTextField();
+        txtFecha = new javax.swing.JTextField();
+        btnAddPoblacion = new javax.swing.JButton();
+        txtPrecioKwh = new javax.swing.JTextField();
         jLabel10 = new javax.swing.JLabel();
         jRadioButton1 = new javax.swing.JRadioButton();
         jRadioButton2 = new javax.swing.JRadioButton();
@@ -240,10 +325,10 @@ public class Calculos extends javax.swing.JFrame {
 
         jLabel9.setText("Fecha");
 
-        btn_poblacion.setText("Agregar");
-        btn_poblacion.addActionListener(new java.awt.event.ActionListener() {
+        btnAddPoblacion.setText("Agregar");
+        btnAddPoblacion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btn_poblacionActionPerformed(evt);
+                btnAddPoblacionActionPerformed(evt);
             }
         });
 
@@ -271,10 +356,10 @@ public class Calculos extends javax.swing.JFrame {
                             .addComponent(jLabel10))
                         .addGap(18, 18, 18)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(c_luminaria, 0, 261, Short.MAX_VALUE)
-                            .addComponent(jTextField1)
+                            .addComponent(c_luminaria, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(txtFecha)
                             .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 147, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(txtPrecioKwh, javax.swing.GroupLayout.PREFERRED_SIZE, 147, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(0, 0, Short.MAX_VALUE)))
                         .addGap(18, 18, 18)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
@@ -286,8 +371,8 @@ public class Calculos extends javax.swing.JFrame {
                                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(txtWatz, javax.swing.GroupLayout.PREFERRED_SIZE, 122, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(txtCantidad, javax.swing.GroupLayout.PREFERRED_SIZE, 122, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addComponent(btn_poblacion, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-                .addGap(28, 28, 28))
+                            .addComponent(btnAddPoblacion, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                .addGap(13, 13, 13))
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGap(143, 143, 143)
                 .addComponent(jRadioButton1)
@@ -317,15 +402,15 @@ public class Calculos extends javax.swing.JFrame {
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(jLabel9)
-                        .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(txtFecha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(jLabel8)
                         .addComponent(txtCantidad, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtPrecioKwh, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel10)
-                    .addComponent(btn_poblacion))
+                    .addComponent(btnAddPoblacion))
                 .addContainerGap(22, Short.MAX_VALUE))
         );
 
@@ -346,17 +431,17 @@ public class Calculos extends javax.swing.JFrame {
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGap(36, 36, 36)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 570, Short.MAX_VALUE)
-                .addContainerGap())
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                .addContainerGap(30, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 514, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(23, 23, 23))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGap(20, 20, 20)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 312, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(120, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -367,10 +452,10 @@ public class Calculos extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap())
+                .addContainerGap(126, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -427,9 +512,34 @@ public class Calculos extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_c_poblacionActionPerformed
 
-    private void btn_poblacionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_poblacionActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_btn_poblacionActionPerformed
+    private void btnAddPoblacionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddPoblacionActionPerformed
+        // Agregar poblacion:
+        String estado = c_estado.getSelectedItem().toString();
+        String municipio = c_municipio.getSelectedItem().toString();
+        String poblacion = c_poblacion.getSelectedItem().toString();
+        String luminaria = c_luminaria.getSelectedItem().toString();
+        int watz = Integer.parseInt(txtWatz.getText());
+        String fecha = txtFecha.getText();
+        int cantidad = Integer.parseInt(txtCantidad.getText());
+        float preciok = Float.parseFloat(txtPrecioKwh.getText());
+
+        int luminariaId = regresaID("luminarias", luminaria);
+        System.out.println("luminaria id: " + luminariaId);
+        Pedido pedido = new Pedido(luminariaId, cantidad);
+        Cotizacion cotizacion = new Cotizacion(fecha, watz, 1, ultimaID("pedido") + 1);
+        Proyectos proyecto = new Proyectos(ultimaID("cotizaciones") + 1, preciok, 0);// int cotizacion, float preciok, boolean proyecto
+        Insertar in = new Insertar();
+
+        try {
+            in.insertarPedido(pedido);
+            in.insertarCot(cotizacion);
+            in.insertarProyecto(proyecto);
+            tablaUno();
+        } catch (SQLException ex) {
+            Logger.getLogger(Calculos.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+    }//GEN-LAST:event_btnAddPoblacionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -467,7 +577,7 @@ public class Calculos extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton btn_poblacion;
+    private javax.swing.JButton btnAddPoblacion;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.JComboBox<String> c_estado;
@@ -490,9 +600,9 @@ public class Calculos extends javax.swing.JFrame {
     private javax.swing.JRadioButton jRadioButton2;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTable1;
-    private javax.swing.JTextField jTextField1;
-    private javax.swing.JTextField jTextField2;
     private javax.swing.JTextField txtCantidad;
+    private javax.swing.JTextField txtFecha;
+    private javax.swing.JTextField txtPrecioKwh;
     private javax.swing.JTextField txtWatz;
     // End of variables declaration//GEN-END:variables
 
