@@ -37,6 +37,10 @@ public class Calculos extends javax.swing.JFrame {
         BindCombo();
         FillLum();
         textFecha();
+        radioOld.setSelected(true);
+        radios();
+        tablaUno();
+        tablaDos();
        
     }
     public void tablaUno(){
@@ -49,7 +53,7 @@ public class Calculos extends javax.swing.JFrame {
             Statement st = null;
             ResultSet rs;
 
-            String colhead[] = {"Poblacion", "Luminaria", "Cantidad", "watz","dsdd"};
+            String colhead[] = {"Poblacion", "Luminaria", "Cantidad", "watz"};
             amodel.setColumnIdentifiers(colhead);
              Statement stm=con.createStatement();
             rs = stm.executeQuery("SELECT poblacion.nombre,luminarias.nombre,sum(pedido.cantidad),cotizaciones.watz FROM proyectos \n"
@@ -58,7 +62,42 @@ public class Calculos extends javax.swing.JFrame {
                     + "INNER JOIN luminarias on luminarias.id=pedido.luminaria_id\n"
                     + "INNER JOIN municipio_poblacion ON municipio_poblacion.id=cotizaciones.mun_poblacion_id\n"
                     + "INNER JOIN poblacion ON poblacion.id=municipio_poblacion.poblacion_id\n"
-                    + "INNER JOIN municipios ON municipios.id=municipio_poblacion.municipio_id\n"
+                    + "INNER JOIN municipios ON municipios.id=municipio_poblacion.municipio_id WHERE cotizaciones.proyecto_ne=0\n"
+                    + "GROUP BY poblacion.nombre,luminarias.nombre,cotizaciones.watz ORDER BY luminarias.nombre");
+
+           ResultSetMetaData rsmd = rs.getMetaData();
+            int cols = rsmd.getColumnCount();
+            while (rs.next()) {
+                Object[] obj = new Object[cols];
+                for (int i = 0; i < cols; i++) {
+                    obj[i] = rs.getObject(i + 1);
+                }
+                amodel.addRow(obj);
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(Calculos.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    public void tablaDos(){
+         DefaultTableModel amodel = (DefaultTableModel) jTable2.getModel();
+        amodel.setRowCount(0);
+
+        try {
+            Consulta mq = new Consulta();
+            Connection con = mq.getConnection();
+            Statement st = null;
+            ResultSet rs;
+
+            String colhead[] = {"Poblacion", "Luminaria", "Cantidad", "watz"};
+            amodel.setColumnIdentifiers(colhead);
+             Statement stm=con.createStatement();
+            rs = stm.executeQuery("SELECT poblacion.nombre,luminarias.nombre,sum(pedido.cantidad),cotizaciones.watz FROM proyectos \n"
+                    + "INNER JOIN cotizaciones on cotizaciones.id=proyectos.cotizaciones_id\n"
+                    + "INNER JOIN pedido on pedido.id=cotizaciones.pedido_id\n"
+                    + "INNER JOIN luminarias on luminarias.id=pedido.luminaria_id\n"
+                    + "INNER JOIN municipio_poblacion ON municipio_poblacion.id=cotizaciones.mun_poblacion_id\n"
+                    + "INNER JOIN poblacion ON poblacion.id=municipio_poblacion.poblacion_id\n"
+                    + "INNER JOIN municipios ON municipios.id=municipio_poblacion.municipio_id WHERE cotizaciones.proyecto_ne=1\n"
                     + "GROUP BY poblacion.nombre,luminarias.nombre,pedido.cantidad,cotizaciones.watz");
 
            ResultSetMetaData rsmd = rs.getMetaData();
@@ -73,6 +112,10 @@ public class Calculos extends javax.swing.JFrame {
         } catch (SQLException ex) {
             Logger.getLogger(Calculos.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+    public void radios(){
+        buttonGroup1.add(radioOld);
+        buttonGroup1.add(radioNew);
     }
     public void mostrar() {
         DefaultTableModel modelo = new DefaultTableModel();
@@ -128,8 +171,6 @@ public class Calculos extends javax.swing.JFrame {
         c_poblacion.removeAllItems();
         String municipio_n = c_municipio.getSelectedItem().toString();
         String estado = c_estado.getSelectedItem().toString();
-        System.out.println("muni" + municipio_n);
-        System.out.println("estado " + estado);
         Consulta mq = new Consulta();
         Connection con = mq.getConnection();
         Statement st;
@@ -161,7 +202,6 @@ public class Calculos extends javax.swing.JFrame {
             st = con.createStatement();
             rs = st.executeQuery("SELECT " + tabla + ".id FROM " + tabla + "\n"
                     + "ORDER BY " + tabla + ".id DESC LIMIT 1");
-            System.out.println("rs: " + rs.toString());
             if (rs.next()) {
                 valor = Integer.parseInt(rs.getString(tabla + ".id"));
                 return valor;
@@ -174,8 +214,7 @@ public class Calculos extends javax.swing.JFrame {
         }
         return 0;
     }
-
-    public int regresaID(String tabla, String campo) {
+    public int regresaPoblacion(String estado,String municipio,String poblacion){
         try {
             Consulta query = new Consulta();
             Connection con = query.getConnection();
@@ -183,8 +222,33 @@ public class Calculos extends javax.swing.JFrame {
             ResultSet rs;
             int valor;
             st = con.createStatement();
-            rs = st.executeQuery("SELECT " + tabla + ".id FROM " + tabla + " WHERE nombre='" + campo + "'");
-            System.out.println("rs: " + rs.toString());
+            rs = st.executeQuery("SELECT municipio_poblacion.id, poblacion.nombre, municipios.municipio, estados.estado FROM municipio_poblacion \n" +
+                                "INNER JOIN municipios on municipios.id=municipio_poblacion.municipio_id\n" +
+                                "INNER JOIN poblacion on poblacion.id=municipio_poblacion.poblacion_id\n" +
+                                "INNER JOIN estados_municipios on estados_municipios.municipios_id=municipios.id\n" +
+                                "INNER JOIN estados on estados_municipios.estados_id=estados.id\n" +
+                                "WHERE poblacion.nombre='"+poblacion+"' and municipios.municipio='"+municipio+"' and estados.estado='"+estado+"'");
+            if (rs.next()) {
+                valor = Integer.parseInt(rs.getString("municipio_poblacion.id"));
+                return valor;
+            } else {
+                return 0;
+
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(Calculos.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return 0;
+    }
+    public int regresaID(String tabla, String campo, String nombreCampo) {
+        try {
+            Consulta query = new Consulta();
+            Connection con = query.getConnection();
+            Statement st;
+            ResultSet rs;
+            int valor;
+            st = con.createStatement();
+            rs = st.executeQuery("SELECT " + tabla + ".id FROM " + tabla + " WHERE "+nombreCampo+"='" + campo + "'");
             if (rs.next()) {
                 valor = Integer.parseInt(rs.getString(tabla + ".id"));
                 return valor;
@@ -227,12 +291,8 @@ public class Calculos extends javax.swing.JFrame {
 
         buttonGroup1 = new javax.swing.ButtonGroup();
         buttonGroup2 = new javax.swing.ButtonGroup();
-        jPanel1 = new javax.swing.JPanel();
-        jLabel1 = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
-        c_estado = new javax.swing.JComboBox<>();
-        c_municipio = new javax.swing.JComboBox<>();
-        jButton1 = new javax.swing.JButton();
+        buttonGroup3 = new javax.swing.ButtonGroup();
+        buttonGroup4 = new javax.swing.ButtonGroup();
         jPanel2 = new javax.swing.JPanel();
         jLabel6 = new javax.swing.JLabel();
         c_luminaria = new javax.swing.JComboBox<>();
@@ -245,63 +305,33 @@ public class Calculos extends javax.swing.JFrame {
         jLabel9 = new javax.swing.JLabel();
         txtFecha = new javax.swing.JTextField();
         btnAddPoblacion = new javax.swing.JButton();
-        txtPrecioKwh = new javax.swing.JTextField();
-        jLabel10 = new javax.swing.JLabel();
+        radioOld = new javax.swing.JRadioButton();
+        radioNew = new javax.swing.JRadioButton();
         jRadioButton1 = new javax.swing.JRadioButton();
-        jRadioButton2 = new javax.swing.JRadioButton();
         jPanel3 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        jTable2 = new javax.swing.JTable();
+        Enviar = new javax.swing.JButton();
+        txtPrecioKwh = new javax.swing.JTextField();
+        jLabel10 = new javax.swing.JLabel();
+        jLabel11 = new javax.swing.JLabel();
+        cdp_tct = new javax.swing.JTextField();
+        cdp_tctDos = new javax.swing.JTextField();
+        jLabel12 = new javax.swing.JLabel();
+        txtPrecioKwhDos = new javax.swing.JTextField();
+        jLabel13 = new javax.swing.JLabel();
+        jPanel4 = new javax.swing.JPanel();
+        c_estado = new javax.swing.JComboBox<>();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel1 = new javax.swing.JLabel();
+        c_municipio = new javax.swing.JComboBox<>();
+        jButton1 = new javax.swing.JButton();
+        jPanel1 = new javax.swing.JPanel();
+        jPanel5 = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-
-        jLabel1.setText("Municipio");
-
-        jLabel2.setText("Estado");
-
-        c_estado.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                c_estadoActionPerformed(evt);
-            }
-        });
-
-        c_municipio.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                c_municipioActionPerformed(evt);
-            }
-        });
-
-        jButton1.setText("jButton1");
-
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(16, 16, 16)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(c_municipio, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton1)
-                    .addComponent(c_estado, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel1))
-                .addContainerGap(9, Short.MAX_VALUE))
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(43, 43, 43)
-                .addComponent(jLabel2)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(c_estado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel1)
-                .addGap(18, 18, 18)
-                .addComponent(c_municipio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(100, 100, 100)
-                .addComponent(jButton1)
-                .addContainerGap(224, Short.MAX_VALUE))
-        );
 
         jLabel6.setText("Luminaria");
 
@@ -314,6 +344,10 @@ public class Calculos extends javax.swing.JFrame {
         jLabel7.setText("Watz");
 
         jLabel8.setText("Cantidad");
+
+        txtWatz.setText("40");
+
+        txtCantidad.setText("14");
 
         c_poblacion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -332,11 +366,16 @@ public class Calculos extends javax.swing.JFrame {
             }
         });
 
-        jLabel10.setText("Precio KHW");
+        radioOld.setText("Municipio");
 
-        jRadioButton1.setText("jRadioButton1");
+        radioNew.setText("Proyecto NOVA ELECTRIC");
 
-        jRadioButton2.setText("jRadioButton2");
+        jRadioButton1.setText("TODOS");
+        jRadioButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jRadioButton1ActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -348,19 +387,18 @@ public class Calculos extends javax.swing.JFrame {
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addComponent(jLabel5)
                         .addGap(18, 18, 18)
-                        .addComponent(c_poblacion, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addComponent(c_poblacion, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jRadioButton1)
+                        .addGap(11, 11, 11))
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel6)
-                            .addComponent(jLabel9)
-                            .addComponent(jLabel10))
-                        .addGap(18, 18, 18)
+                            .addComponent(jLabel9))
+                        .addGap(29, 29, 29)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(c_luminaria, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(txtFecha)
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addComponent(txtPrecioKwh, javax.swing.GroupLayout.PREFERRED_SIZE, 147, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(0, 0, Short.MAX_VALUE)))
+                            .addComponent(txtFecha))
                         .addGap(18, 18, 18)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(jPanel2Layout.createSequentialGroup()
@@ -375,9 +413,9 @@ public class Calculos extends javax.swing.JFrame {
                 .addGap(13, 13, 13))
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGap(143, 143, 143)
-                .addComponent(jRadioButton1)
+                .addComponent(radioOld)
                 .addGap(33, 33, 33)
-                .addComponent(jRadioButton2)
+                .addComponent(radioNew)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
@@ -385,13 +423,14 @@ public class Calculos extends javax.swing.JFrame {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGap(20, 20, 20)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jRadioButton1)
-                    .addComponent(jRadioButton2))
-                .addGap(29, 29, 29)
+                    .addComponent(radioOld)
+                    .addComponent(radioNew))
+                .addGap(28, 28, 28)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(c_poblacion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel5))
-                .addGap(20, 20, 20)
+                    .addComponent(jLabel5)
+                    .addComponent(jRadioButton1))
+                .addGap(19, 19, 19)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(jLabel6)
                     .addComponent(c_luminaria, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -407,10 +446,7 @@ public class Calculos extends javax.swing.JFrame {
                         .addComponent(jLabel8)
                         .addComponent(txtCantidad, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(18, 18, 18)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(txtPrecioKwh, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel10)
-                    .addComponent(btnAddPoblacion))
+                .addComponent(btnAddPoblacion)
                 .addContainerGap(22, Short.MAX_VALUE))
         );
 
@@ -427,46 +463,227 @@ public class Calculos extends javax.swing.JFrame {
         ));
         jScrollPane1.setViewportView(jTable1);
 
+        jTable2.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        jScrollPane2.setViewportView(jTable2);
+
+        Enviar.setText("Calcular");
+        Enviar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                EnviarActionPerformed(evt);
+            }
+        });
+
+        txtPrecioKwh.setText("3.71");
+        txtPrecioKwh.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtPrecioKwhActionPerformed(evt);
+            }
+        });
+
+        jLabel10.setText("Precio KHW");
+
+        jLabel11.setText("CDP");
+
+        cdp_tct.setText("3.71");
+        cdp_tct.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cdp_tctActionPerformed(evt);
+            }
+        });
+
+        cdp_tctDos.setText("3.71");
+        cdp_tctDos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cdp_tctDosActionPerformed(evt);
+            }
+        });
+
+        jLabel12.setText("CDP");
+
+        txtPrecioKwhDos.setText("3.71");
+        txtPrecioKwhDos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtPrecioKwhDosActionPerformed(evt);
+            }
+        });
+
+        jLabel13.setText("Precio KHW");
+
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                .addContainerGap(30, Short.MAX_VALUE)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 514, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(23, 23, 23))
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(173, 173, 173)
+                        .addComponent(Enviar, javax.swing.GroupLayout.PREFERRED_SIZE, 290, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(16, 16, 16)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addComponent(jLabel10)
+                                .addGap(18, 18, 18)
+                                .addComponent(txtPrecioKwh, javax.swing.GroupLayout.PREFERRED_SIZE, 57, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(28, 28, 28)
+                                .addComponent(jLabel11)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(cdp_tct))
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 304, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 322, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addComponent(jLabel13)
+                                .addGap(18, 18, 18)
+                                .addComponent(txtPrecioKwhDos, javax.swing.GroupLayout.PREFERRED_SIZE, 57, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(28, 28, 28)
+                                .addComponent(jLabel12)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(cdp_tctDos)))))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGap(20, 20, 20)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 312, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(txtPrecioKwh, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel10)
+                    .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(cdp_tct, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jLabel11)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(txtPrecioKwhDos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel13)
+                            .addComponent(cdp_tctDos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel12))))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 250, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(Enviar)
+                .addContainerGap())
+        );
+
+        c_estado.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                c_estadoActionPerformed(evt);
+            }
+        });
+
+        jLabel2.setText("Estado");
+
+        jLabel1.setText("Municipio");
+
+        c_municipio.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                c_municipioActionPerformed(evt);
+            }
+        });
+
+        jButton1.setText("jButton1");
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(17, 17, 17)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(c_estado, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addComponent(c_municipio, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(28, 28, 28)
+                        .addComponent(jButton1))
+                    .addComponent(jLabel1))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jButton1)
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel2)
+                            .addComponent(jLabel1))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(c_estado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(c_municipio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
+        jPanel5.setLayout(jPanel5Layout);
+        jPanel5Layout.setHorizontalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 279, Short.MAX_VALUE)
+        );
+        jPanel5Layout.setVerticalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 220, Short.MAX_VALUE)
+        );
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(22, 22, 22)
+                .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(297, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+            .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(126, Short.MAX_VALUE))
+                    .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(44, 44, 44)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(27, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(37, 37, 37)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -476,7 +693,6 @@ public class Calculos extends javax.swing.JFrame {
     private void c_estadoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_c_estadoActionPerformed
         c_municipio.removeAllItems();
         String estado = c_estado.getSelectedItem().toString();
-        System.out.println("estado ; " + estado);
         Consulta mq = new Consulta();
         Connection con = mq.getConnection();
         Statement st;
@@ -514,6 +730,7 @@ public class Calculos extends javax.swing.JFrame {
 
     private void btnAddPoblacionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddPoblacionActionPerformed
         // Agregar poblacion:
+        Consulta con = new Consulta();
         String estado = c_estado.getSelectedItem().toString();
         String municipio = c_municipio.getSelectedItem().toString();
         String poblacion = c_poblacion.getSelectedItem().toString();
@@ -522,24 +739,92 @@ public class Calculos extends javax.swing.JFrame {
         String fecha = txtFecha.getText();
         int cantidad = Integer.parseInt(txtCantidad.getText());
         float preciok = Float.parseFloat(txtPrecioKwh.getText());
-
-        int luminariaId = regresaID("luminarias", luminaria);
-        System.out.println("luminaria id: " + luminariaId);
+        float carga_watz=1, carga_25=1, total_carga=1, consumo_promedio=1, total_lamparas=1;
+        int tipo=0;
+                
+        
+        
+        
+        
+        if(radioOld.isSelected()){tipo=0;}else if(radioNew.isSelected()){tipo=1;}
+        int luminariaId = regresaID("luminarias", luminaria,"nombre");
         Pedido pedido = new Pedido(luminariaId, cantidad);
-        Cotizacion cotizacion = new Cotizacion(fecha, watz, 1, ultimaID("pedido") + 1);
-        Proyectos proyecto = new Proyectos(ultimaID("cotizaciones") + 1, preciok, 0);// int cotizacion, float preciok, boolean proyecto
+        int mun_poblacion = regresaPoblacion(estado, municipio, poblacion);
+        Cotizacion cotizacion = new Cotizacion(fecha, watz, mun_poblacion, ultimaID("pedido") + 1,tipo);
+        ultimaID("cotizaciones");
+         //Proyectos( carga_watz, carga_25, total_carga, consumo_promedio, total_lamparas) {
+   
         Insertar in = new Insertar();
 
         try {
             in.insertarPedido(pedido);
             in.insertarCot(cotizacion);
+            
+        carga_watz=con.cargaWatz(estado, municipio, poblacion, tipo);
+        carga_25=con.caraVeintiCinco(estado, municipio, poblacion, tipo);
+        total_carga=carga_25+carga_watz;
+        consumo_promedio=(total_carga/1000)*12;
+        total_lamparas=con.totalLuminarias(estado, municipio, poblacion, tipo);
+        /*********************************************/
+        System.out.println("poblacion: "+ poblacion);
+        System.out.println("luminaria: " + luminaria);
+        System.out.println("carga_watz: " + carga_watz);
+        System.out.println("carga_25: " + carga_25);
+        System.out.println("total_carga: " + total_carga);
+        System.out.println("consumo_promedio: " + consumo_promedio);
+        System.out.println("total_lamparas: " + total_lamparas);
+        System.out.println("");
+            System.out.println(" - - - - - - - - - - - - - - - - - - - - ");
+        Proyectos proyecto = new Proyectos(ultimaID("cotizaciones"), preciok,carga_watz, carga_25, total_carga, consumo_promedio, total_lamparas);
+       
             in.insertarProyecto(proyecto);
             tablaUno();
+            tablaDos();
         } catch (SQLException ex) {
             Logger.getLogger(Calculos.class.getName()).log(Level.SEVERE, null, ex);
         }
 
     }//GEN-LAST:event_btnAddPoblacionActionPerformed
+
+    private void jRadioButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButton1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jRadioButton1ActionPerformed
+
+    private void EnviarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnviarActionPerformed
+        String estado = c_estado.getSelectedItem().toString();
+        String municipio = c_municipio.getSelectedItem().toString();
+        float cdp = Float.parseFloat(cdp_tct.getText());
+        float costoK = Float.parseFloat(txtPrecioKwh.getText());
+        
+        float cdpdos = Float.parseFloat(cdp_tctDos.getText());
+        float costoKdos = Float.parseFloat(txtPrecioKwhDos.getText());
+        float importe=cdpdos*31*costoKdos;
+        float importedos=cdp*31*costoK;
+        System.out.println("cdp: " + cdp + " x 31 = " + cdp*31 + " por "+costoK + " = "+cdp*31*costoK   );
+        Resultado res = new Resultado();
+        Consulta con = new Consulta();
+        res.totalLuminariasFinalUno(estado, municipio, 1);
+        res.importeTot(importe,importedos);
+        res.setVisible(true);
+        
+        this.hide();
+    }//GEN-LAST:event_EnviarActionPerformed
+
+    private void txtPrecioKwhActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtPrecioKwhActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtPrecioKwhActionPerformed
+
+    private void cdp_tctActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cdp_tctActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_cdp_tctActionPerformed
+
+    private void cdp_tctDosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cdp_tctDosActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_cdp_tctDosActionPerformed
+
+    private void txtPrecioKwhDosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtPrecioKwhDosActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtPrecioKwhDosActionPerformed
 
     /**
      * @param args the command line arguments
@@ -577,16 +862,24 @@ public class Calculos extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton Enviar;
     private javax.swing.JButton btnAddPoblacion;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
+    private javax.swing.ButtonGroup buttonGroup3;
+    private javax.swing.ButtonGroup buttonGroup4;
     private javax.swing.JComboBox<String> c_estado;
     private javax.swing.JComboBox<String> c_luminaria;
     private javax.swing.JComboBox<String> c_municipio;
     private javax.swing.JComboBox<String> c_poblacion;
+    private javax.swing.JTextField cdp_tct;
+    private javax.swing.JTextField cdp_tctDos;
     private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
+    private javax.swing.JLabel jLabel11;
+    private javax.swing.JLabel jLabel12;
+    private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
@@ -596,13 +889,19 @@ public class Calculos extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
+    private javax.swing.JPanel jPanel5;
     private javax.swing.JRadioButton jRadioButton1;
-    private javax.swing.JRadioButton jRadioButton2;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTable1;
+    private javax.swing.JTable jTable2;
+    private javax.swing.JRadioButton radioNew;
+    private javax.swing.JRadioButton radioOld;
     private javax.swing.JTextField txtCantidad;
     private javax.swing.JTextField txtFecha;
     private javax.swing.JTextField txtPrecioKwh;
+    private javax.swing.JTextField txtPrecioKwhDos;
     private javax.swing.JTextField txtWatz;
     // End of variables declaration//GEN-END:variables
 

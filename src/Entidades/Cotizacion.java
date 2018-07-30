@@ -11,16 +11,17 @@ package Entidades;
  */
 public class Cotizacion {
  private String fecha_inspeccion;
- private int watz,mun_pob_id,pedido_id;
+ private int watz,mun_pob_id,pedido_id,proyecto_ne;
 
     public Cotizacion() {
     }
 
-    public Cotizacion(String fecha_inspeccion, int watz, int mun_pob_id, int pedido_id) {
+    public Cotizacion(String fecha_inspeccion, int watz, int mun_pob_id, int pedido_id, int proyecto_ne) {
         this.fecha_inspeccion = fecha_inspeccion;
         this.watz = watz;
         this.mun_pob_id = mun_pob_id;
         this.pedido_id = pedido_id;
+        this.proyecto_ne = proyecto_ne;
     }
 
     public String getFecha_inspeccion() {
@@ -54,6 +55,16 @@ public class Cotizacion {
     public void setPedido_id(int pedido_id) {
         this.pedido_id = pedido_id;
     }
+
+    public int getProyecto_ne() {
+        return proyecto_ne;
+    }
+
+    public void setProyecto_ne(int proyecto_ne) {
+        this.proyecto_ne = proyecto_ne;
+    }
+
+    
  
  
 }
