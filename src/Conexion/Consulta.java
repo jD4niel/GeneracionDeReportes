@@ -63,13 +63,13 @@ public class Consulta {
 
     }
     
-    public int caraVeintiCinco(String estado,String municipio,String poblacion,int tipo){
+    public float caraVeintiCinco(String estado,String municipio,String poblacion,int tipo){
         try {
             Consulta query = new Consulta();
             Connection con = query.getConnection();
             Statement st;
             ResultSet rs;
-            int valor;
+            float valor;
             st = con.createStatement();
             rs = st.executeQuery("SELECT luminarias.nombre,poblacion.nombre, SUM((pedido.cantidad*cotizaciones.watz)*0.25) FROM cotizaciones \n" +
             "INNER JOIN pedido ON pedido.id=cotizaciones.pedido_id\n" +
@@ -82,7 +82,7 @@ public class Consulta {
             "WHERE poblacion.nombre='"+poblacion+"' and municipios.municipio='"+municipio+"' and estados.estado='"+estado+"' and NOT luminarias.id=(1 OR 2 OR 3) and cotizaciones.proyecto_ne="+tipo +
             " GROUP BY luminarias.nombre,poblacion.nombre");
             if (rs.next()) {
-                valor = Integer.parseInt(rs.getString("SUM((pedido.cantidad*cotizaciones.watz)*0.25)"));
+                valor = Float.parseFloat(rs.getString("SUM((pedido.cantidad*cotizaciones.watz)*0.25)"));
                 return valor;
             } else {
                 return 0;
@@ -93,13 +93,13 @@ public class Consulta {
         }
         return 0;
     }
-    public int cargaWatz(String estado,String municipio,String poblacion,int tipo){
+    public float cargaWatz(String estado,String municipio,String poblacion,int tipo){
        try {
             Consulta query = new Consulta();
             Connection con = query.getConnection();
             Statement st;
             ResultSet rs;
-            int valor;
+            float valor;
             st = con.createStatement();
             rs = st.executeQuery("SELECT luminarias.nombre,poblacion.nombre, SUM(pedido.cantidad*cotizaciones.watz) FROM cotizaciones \n" +
                 "INNER JOIN pedido ON pedido.id=cotizaciones.pedido_id\n" +
@@ -112,7 +112,7 @@ public class Consulta {
                 "WHERE poblacion.nombre='"+poblacion+"' and municipios.municipio='"+municipio+"' and estados.estado='"+estado+"' and cotizaciones.proyecto_ne="+tipo +
                 " GROUP BY luminarias.nombre,poblacion.nombre");
                 if (rs.next()) {
-                valor = Integer.parseInt(rs.getString("SUM(pedido.cantidad*cotizaciones.watz)"));
+                valor = Float.parseFloat(rs.getString("SUM(pedido.cantidad*cotizaciones.watz)"));
                 return valor;
             } else {
                 return 0;
